@@ -69,7 +69,7 @@ export default async function handler(
       try {
         const { objects } = await cosmic.objects
           .find({ type: 'students' })
-          .props('id,slug,title,metadata')
+          .props('id,slug,title,metadata,created_at,modified_at')
         res
           .status(200)
           .json({ message: 'Students fetched successfully', data: objects })

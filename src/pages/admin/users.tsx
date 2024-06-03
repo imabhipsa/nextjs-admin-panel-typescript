@@ -1,16 +1,34 @@
-import { IOSSwitch } from 'components/core'
+import MaterialTable from '@material-table/core'
+import { Avatar } from '@mui/material'
 import { AdminLayout } from 'layouts'
-import { useFetch } from 'hooks'
 import moment from 'moment'
+import { useEffect, useState } from 'react'
 import Swal from 'sweetalert2'
 import { User } from 'types'
 import { MuiTblOptions } from 'utils'
-import MaterialTable from '@material-table/core'
-import { Avatar } from '@mui/material'
 
-export default function Users() {
-  const [data] = useFetch<User[]>('Users')
-  const toggleStallStatus = async (user: User) => {}
+export default function Students() {
+  const [data, setData] = useState([])
+  const [refetch, setRefetch] = useState(false)
+  useEffect(() => {
+    ;(async () => {
+      const res = await fetch('/api/student/getAll')
+      const result = await res.json()
+      console.log(
+        result.data.map((_: any) => ({
+          ..._,
+          ..._.metadata,
+        }))
+      )
+      setData(
+        result.data.map((_: any) => ({
+          ..._,
+          ..._.metadata,
+        }))
+      )
+    })()
+  }, [refetch])
+
   const sendNotificationToSelectedUsers = async (users: User[]) => {
     const { value: title } = await Swal.fire({
       title: "What's the title of the notification?",
@@ -48,11 +66,11 @@ export default function Users() {
     Swal.fire('Success', 'successfully Notifications Sent', 'success')
   }
   return (
-    <AdminLayout title="Users - Admin Panel">
+    <AdminLayout title="Students - Admin Panel">
       <div className="px-4 py-4">
         <MaterialTable
           isLoading={data === null}
-          title={'Users'}
+          title={'Students'}
           options={{ ...MuiTblOptions(), selection: true, filtering: true }}
           columns={[
             {
@@ -64,77 +82,67 @@ export default function Users() {
             },
             {
               title: 'Name',
-              field: 'displayName',
+              field: 'name',
               hideFilterIcon: true,
-              render: ({ displayName, photoURL, phoneNumber }) => (
+              render: ({ name }) => (
                 <>
                   <div className="flex items-center gap-2">
                     <Avatar
-                      src={photoURL}
                       sx={{
                         bgcolor: `#${Math.random().toString().slice(2, 8)}`,
                       }}
                       className={`shadow`}
                     >
-                      {displayName?.[0]}
+                      {name?.[0]}
                     </Avatar>
                     <div className="">
-                      <h4 className="">{displayName}</h4>
-                      <h6 className="text-sm text-gray-500">{phoneNumber}</h6>
+                      <h4 className="">{name}</h4>
                     </div>
                   </div>
                 </>
               ),
             },
             {
-              title: 'Email',
-              field: 'email',
+              title: 'Roll Number',
+              field: 'roll-number',
               export: true,
             },
             {
-              title: 'Password',
-              field: 'password',
-              render: () => '******',
-              export: true,
-            },
-            {
-              title: 'Role',
-              field: 'role',
+              title: 'Gender',
+              field: 'gender.key',
               lookup: {
-                admin: 'Admin',
-                user: 'User',
+                male: 'Male',
+                female: 'Female',
               },
             },
             {
+              title: 'DOB',
+              field: 'dob',
+              type: 'date',
+              emptyValue: '-',
+              editable: 'never',
+            },
+            {
               title: 'Created At',
-              field: 'createdAt',
-              render: ({ createdAt }: User) =>
-                moment(new Date(createdAt)).format('LLL'),
+              field: 'created_at',
+
+              render: ({ created_at }) =>
+                moment(new Date(created_at)).format('LLL'),
               editable: 'never',
               type: 'date',
             },
             {
               title: 'Updated At',
-              field: 'updatedAt',
-              render: ({ updatedAt }: User) =>
-                moment(new Date(updatedAt)).fromNow(),
+              field: 'modified_at',
+              render: ({ modified_at }) =>
+                moment(new Date(modified_at)).fromNow(),
               editable: 'never',
               type: 'date',
             },
-            {
-              title: 'Is Blocked',
-              field: 'isBlocked',
-              render: (user: User) => (
-                <IOSSwitch
-                  checked={user?.isBlocked}
-                  onChange={() => toggleStallStatus(user)}
-                />
-              ),
-              editable: 'never',
-              type: 'boolean',
-            },
           ]}
-          data={data === null ? [] : data?.map((_, i) => ({ ..._, sl: i + 1 }))}
+          data={
+            data === null ? [] : data?.map((_: any, i) => ({ ..._, sl: i + 1 }))
+          }
           actions={[
             {
               icon: 'notifications',
@@ -148,18 +156,21 @@ export default function Users() {
           editable={{
             onRowAdd: async (newData) => {
               try {
-                const apiResponse = await fetch('/api/user/create', {
+                console.log(newData)
+                const apiResponse = await fetch('/api/student/create', {
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json',
                   },
+
                   body: JSON.stringify({
-                    displayName: newData.displayName,
-                    email: newData.email,
-                    password: newData.password,
-                    dbRef: `Users`,
-                    role: newData.role,
-                    additionalData: {},
+                    name: newData.name,
+
+                    ['roll-number']: +newData?.['roll-number'],
+                    gender: {
+                      male: 'Male',
+                      female: 'Female',
+                    }[newData.gender.key as 'male' | 'female'],
                   }),
                 })
                 const result = await apiResponse.json()
@@ -173,6 +184,34 @@ export default function Users() {
                   error?.message || 'Error creating user',
                   'error'
                 )
+              } finally {
+                setRefetch((prev) => !prev)
+              }
+            },
+            onRowDelete: async (oldData) => {
+              try {
+                const apiResponse = await fetch('/api/student/delete', {
+                  method: 'DELETE',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    id: oldData.id,
+                  }),
+                })
+                const result = await apiResponse.json()
+                console.log(result)
+                if (result?.error)
+                  return Swal.fire('Error', result?.message, 'error')
+                Swal.fire('Success', 'Successfully deleted', 'success')
+              } catch (error: any) {
+                Swal.fire(
+                  'Error',
+                  error?.message || 'Error creating user',
+                  'error'
+                )
+              } finally {
+                setRefetch((prev) => !prev)
               }
             },
           }}
