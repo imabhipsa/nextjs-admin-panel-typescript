@@ -1,6 +1,5 @@
 import { ThemeProvider } from '@mui/material'
 import { Loader } from 'components/core'
-import { auth, database } from 'configs'
 import { useIsMounted } from 'hooks'
 import { useRouter } from 'next/router'
 import {
@@ -17,7 +16,7 @@ const AppContext = createContext<AppContextType>({})
 
 const AppContextProvider = (props: AppContextProviderType) => {
   const [user, setUser] = useState<Partial<User> | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const router = useRouter()
   const isMounted = useIsMounted()
   const updateUser = useCallback(
@@ -27,33 +26,7 @@ const AppContextProvider = (props: AppContextProviderType) => {
     [isMounted]
   )
 
-  useEffect(() => {
-    const onAuthStateChange = async () => {
-      auth.onAuthStateChanged((user) => {
-        isMounted.current && setLoading(true)
-        if (!user) {
-          isMounted.current && setLoading(false)
-          isMounted.current && setUser({})
-          if (
-            router.pathname?.includes('platform') ||
-            router.pathname?.includes('admin')
-          )
-            return router.push('/')
-        }
-        database.ref(`Users/${user?.uid}`).on('value', (snap) => {
-          if (!snap.exists()) return isMounted.current && setLoading(false)
-          const updatedUserData = snap.val() as User
-          isMounted.current &&
-            setUser((prev) => ({
-              ...prev,
-              ...updatedUserData,
-            }))
-          isMounted.current && setLoading(false)
-        })
-      })
-    }
-    onAuthStateChange()
-  }, [isMounted, router])
+  useEffect(() => {}, [isMounted, router])
 
   const { theme } = useCustomTheme()
   return (

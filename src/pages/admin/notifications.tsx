@@ -2,7 +2,6 @@ import { AdminLayout } from 'layouts'
 import { ICONS } from 'assets'
 import { NOT_FOUND } from 'assets/animations'
 import { Empty } from 'components/core'
-import { database } from 'configs'
 import { useAppContext } from 'contexts'
 import { useFetch } from 'hooks'
 import moment from 'moment'
@@ -26,7 +25,6 @@ export default () => {
       confirmButtonText: 'Yes, delete it!',
     })
     if (!value) return
-    await database.ref(`notifications/${user?.uid}`).remove()
     Swal.fire('Deleted!', 'Your notifications has been deleted.', 'success')
   }
   return (
@@ -63,9 +61,6 @@ export default () => {
                           html: message,
                           showCloseButton: true,
                         })
-                        database
-                          .ref(`notifications/${user?.uid}/${id}`)
-                          .update({ isRead: true })
                       }}
                     >
                       <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full">

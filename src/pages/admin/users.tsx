@@ -1,6 +1,5 @@
 import { IOSSwitch } from 'components/core'
 import { AdminLayout } from 'layouts'
-import { database } from 'configs'
 import { useFetch } from 'hooks'
 import moment from 'moment'
 import Swal from 'sweetalert2'
@@ -11,11 +10,7 @@ import { Avatar } from '@mui/material'
 
 export default function Users() {
   const [data] = useFetch<User[]>('Users')
-  const toggleStallStatus = async (user: User) => {
-    await database
-      .ref(`Users/${user.uid}`)
-      .update({ isBlocked: !user.isBlocked, updatedAt: new Date().toString() })
-  }
+  const toggleStallStatus = async (user: User) => {}
   const sendNotificationToSelectedUsers = async (users: User[]) => {
     const { value: title } = await Swal.fire({
       title: "What's the title of the notification?",
@@ -49,12 +44,6 @@ export default function Users() {
       'info'
     )
     for (const selectedUser of users) {
-      await database.ref(`notifications/${selectedUser?.uid}`).push({
-        title,
-        message,
-        createdAt: new Date().toString(),
-        isRead: false,
-      })
     }
     Swal.fire('Success', 'successfully Notifications Sent', 'success')
   }
